@@ -1,6 +1,6 @@
 # UACR (Urine Albumin/Creatinine (g/kg))
 #
-# Log transformed analysis of UACR data from study GBDB comparing various doses of study drug against insulin glargine
+# Log transformed analysis of UACR data from study GBDD comparing various doses of study drug against insulin glargine
 # Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(UACR), SD of log(UACR), and 95% confidence intervals
 # Time points of interest include Baseline, Week 26 (midpoint), Week 52 (end of study), Change and Percent Change.
 #
@@ -10,20 +10,19 @@
 # *Library coastr is an internal package with the sole purpose of increasing the efficiency and speed of pulling data from the internal server
 #
 
-
 library(dplyr)
 library(EnvStats)
 library(reshape)
 suppressMessages(library(coastr))
 
 
-lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdb/final/data/analysis/shared",data_file="labs.sas7bdat")
+lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdd/final/data/analysis/shared",data_file="labs.sas7bdat")
 #subjinfo <- import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdx/final/data/analysis/shared/adam",data_file="adsl.sas7bdat")
 
 
-gbdb <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
-gbdb <- gbdb %>% filter(LBTESTABR =="MAL/CR")
-trt_merge <- gbdb %>% filter( VISID =="16") ###################
+gbdd <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
+gbdd <- gbdd %>% filter(LBTESTABR =="MAL/CR")
+trt_merge <- gbdd %>% filter( VISID =="13") ###################
 trt_merge <- trt_merge[complete.cases(trt_merge[,4]),]
 trt_merge <- trt_merge %>% filter (LBRUCD=="95")
 #trt_merge$LBBLVALTR[is.na(trt_merge$LBBLVALTR)] <- trt_merge$LBRN
@@ -45,9 +44,8 @@ visit_sum_base <- trt_merge %>% group_by(TRT,VISID) %>% summarise( mean= mean(BA
 visit_sum_base$VISID <- "Baseline"
 visit_sum <- merge(visit_sum_last, visit_sum_base,all=TRUE)
 
-
 trt_merge$TRT<-as.factor(trt_merge$TRT)
-trt_merge$TRT = relevel(trt_merge$TRT, ref="Insulin Glargine")
+trt_merge$TRT = relevel(trt_merge$TRT, ref="Glargine")
 lm_data <- trt_merge
 lm_data$Change[lm_data$Change==0]<- NA
 lm_data <- lm_data[complete.cases(lm_data[,13]),]
@@ -86,25 +84,23 @@ trt_diff_merge <-merge(trt_diff,vsplacebo_glargine2,all=TRUE)
 final_diff <- merge(ci_merge, trt_diff_merge,all=TRUE)
 final_diff[c(1,3),3:6]<-final_diff[c(1,3),3:6]*100
 
-asdf3 <- trt_merge%>% filter(VISID=="16")
+asdf3 <- trt_merge%>% filter(VISID=="13")
 asdf3$Change[asdf3$Change==0]<- NA
 asdf3 <- asdf3[complete.cases(asdf3),]
-
 hold2 <- asdf3 %>% group_by(TRT, VISID) %>% summarise( mean= mean(log(aval_unchanged)-log(base_unchanged)), n= n(), sd =(sd(log(aval_unchanged)-log(base_unchanged))),
                                                        geoSE =(sd(log(aval_unchanged)-log(base_unchanged))/sqrt(n())))
 change_sum <- hold2
 change_sum$VISID ="Change"
 percent_change_sum2<- asdf3 %>% group_by(TRT, VISID) %>% summarise( geomean= (exp(mean(Percent_change3))-1)*100 ,
                                                                     geoSE =( exp(mean(Percent_change3))*100*(sd(Percent_change3)/sqrt(n()))),n=n() )
-
 percent_change_sum2$VISID <- "Percent_Change"
 
 check <- merge(visit_sum, change_sum, all=TRUE)
 check <- merge(check, percent_change_sum2, all=TRUE)
 
 diff <-check %>% filter(VISID=="Percent_Change")
-diff$delta <- diff$geomean-diff$geomean[diff$TRT=="Insulin Glargine"]
-diff$deltaSE <- sqrt((diff$geoSE[diff$TRT=="Insulin Glargine"])^2+(diff$geoSE)^2)
+diff$delta <- diff$geomean-diff$geomean[diff$TRT=="Glargine"]
+diff$deltaSE <- sqrt((diff$geoSE[diff$TRT=="Glargine"])^2+(diff$geoSE)^2)
 final_diff<-diff[1:2,c(1,2,8,9)]
 final_diff$VISID <-"%Change vs Glargine"
 final_diff$TRT <- as.character(final_diff$TRT)
@@ -123,6 +119,7 @@ check <- check[,c(1,2,5,4,3,6,7,8,9)]
 
 names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(UACR)","SD of log(UACR)","Lower","Upper")
 
-write.csv(check, "GBDB_UACR.csv")
+
+write.csv(check, "GBDD_UACR.csv")
 
 

@@ -37,9 +37,7 @@ UACR_analysis <- function(study_name)
   else if (study_name == "GBDD"){
     source("GBDD.R")
   }
-  else if (study_name == "GBDE"){
-    source("GBDE.R")
-  }
+
   else if (study_name == "GBDG"){
     source("GBDG.R")
   }
