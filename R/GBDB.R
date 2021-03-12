@@ -1,3 +1,16 @@
+# UACR (Urine Albumin/Creatinine (g/kg))
+#
+# Log transformed analysis of UACR data from study GBDB comparing various doses of study drug against placebo.
+# Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(UACR), SD of log(UACR), and 95% confidence intervals
+# Time points of interest include Baseline, Week 26 (midpoint), Week 52 (end of study), Change and Percent Change.
+#
+# Fit to model log(y) = log(y_b) + Treatment
+# After model is finished transform back by LSM=exp(LSM) and SE=exp(LSM)*SE, CI for percent change given by [exp(L)-1, exp(U)-1]
+#
+# *Library coastr is an internal package with the sole purpose of increasing the efficiency and speed of pulling data from the internal server
+#
+
+
 library(dplyr)
 library(EnvStats)
 library(reshape)
