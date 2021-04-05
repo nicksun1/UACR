@@ -1,14 +1,12 @@
-# UACR (Urine Albumin/Creatinine (g/kg))
+# Biomarker Regression Analysis
 #
-# Log transformed analysis of combined UACR data from studies GBDA, GBCF, GBDI, GBDG comparing various combined doses of study drug (and competitor drugs) against placebo
-# Separates combined data in 4 different summary sets based on baseline UACR value.
-# Outputs csv file that includes all data split by thresholds where results of interest include %Change vs Placebo and Change in log(UACR) vs Placebo
-# Also outputs separate analysis and summary files for each individual threshold in format similar to individual study analysis output (GBCF).
+# Log transformed analysis of combined biomarker data from studies A, CF, I, G comparing various combined doses of study drug (and competitor drugs) against placebo
+# Separates combined data in 4 different summary sets based on baseline biomarker value.
+# Outputs csv file that includes all data split by thresholds where results of interest include %Change vs Placebo and Change in log(biomarker) vs Placebo
+# Also outputs separate analysis and summary files for each individual threshold in format similar to individual study analysis output (studycf).
 #
-# Fit to model Change in log(UACR) = Treatment and Fit to model log(y) = log(y_b) + Treatment
-#
-# *Library coastr is an internal package with the sole purpose of increasing the efficiency and speed of pulling data from the internal server
-#
+# Fit to model Change in log(biomarker) = Treatment and Fit to model log(y) = log(y_b) + Treatment
+##
 
 
 
@@ -19,19 +17,19 @@ library(reshape)
 suppressMessages(library(coastr))
 
 
-## GBCF
+## studycf
 
-lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbcf/final/data/analysis/shared",data_file="labs.sas7bdat")
-gbcf <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
-gbcf <- gbcf %>% filter(LBTESTABR =="MAL/CR")
-trt_merge <- gbcf %>% filter (LBRUCD=="95")
+lab <- read.csv("labscf.csv")
+studycf <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
+studycf <- studycf %>% filter(LBTESTABR =="MAL/CR")
+trt_merge <- studycf %>% filter (LBRUCD=="95")
 trt_merge <- trt_merge  %>% filter( VISID =="9") ###################
 trt_merge <- trt_merge[complete.cases(trt_merge[,4]),]
 
 trt_merge$TRT[trt_merge$TRT=="Placebo/Sitagliptin"] <-"Placebo"
-trt_merge$TRT[trt_merge$TRT=="LY 1.5mg"] <-"Dula_1.5"
-trt_merge$TRT[trt_merge$TRT=="LY 0.75mg"] <-"Dula_0.75"
-trt_merge <- trt_merge %>% filter(TRT=="Placebo" | TRT=="Dula_1.5" | TRT=="Dula_0.75"|TRT=="Sitagliptin")
+trt_merge$TRT[trt_merge$TRT=="LY 1.5mg"] <-"Drug_1.5"
+trt_merge$TRT[trt_merge$TRT=="LY 0.75mg"] <-"Drug_0.75"
+trt_merge <- trt_merge %>% filter(TRT=="Placebo" | TRT=="Drug_1.5" | TRT=="Drug_0.75"|TRT=="Sitagliptin")
 
 trt_merge$aval_unchanged <- trt_merge$LBRN
 trt_merge$base_unchanged <- trt_merge$LBBLVALTR
@@ -42,27 +40,27 @@ trt_merge$Change_oriscale <- trt_merge$aval_unchanged-trt_merge$base_unchanged
 trt_merge$Percent_change3 <- log(trt_merge$aval_unchanged/trt_merge$base_unchanged)
 trt_merge <- trt_merge[complete.cases(trt_merge[,14]),]
 trt_merge <- trt_merge[,c(-4,-5,-7,-8,-9)]
-gbcf_comb <- trt_merge
-gbcf_comb$SUBJID <- paste("GBCF",gbcf_comb$SUBJID, sep="_")
+studycf_comb <- trt_merge
+studycf_comb$SUBJID <- paste("studycf",studycf_comb$SUBJID, sep="_")
 
 
-## GBDA
+## studya
 
-lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbda/final/data/analysis/shared",data_file="labs.sas7bdat")
-gbda <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
-gbda <- gbda %>% filter(LBTESTABR =="MAL/CR")
-#bda <- gbda %>% filter(SAFFL=="Y")
-trt_merge <- gbda %>% filter (LBRUCD=="95")
+lab <- read.csv("labsa.csv")
+studya <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
+studya <- studya %>% filter(LBTESTABR =="MAL/CR")
+#bda <- studya %>% filter(SAFFL=="Y")
+trt_merge <- studya %>% filter (LBRUCD=="95")
 trt_merge <- trt_merge %>% filter(VISID =="10")
 #adsl_trt <- subjinfo %>% select(USUBJID ,TRT, TRTSORT)
 
-#trt_merge <- merge(gbda, adsl_trt,all=TRUE)
+#trt_merge <- merge(studya, adsl_trt,all=TRUE)
 trt_merge <- trt_merge[complete.cases(trt_merge[,4]),]
 
 trt_merge$TRT[trt_merge$TRT=="Placebo/LY2189265 1.5 mg"] <-"Placebo"
 trt_merge$TRT[trt_merge$TRT=="Placebo/LY2189265 0.75 mg"] <-"Placebo"
-trt_merge$TRT[trt_merge$TRT=="LY2189265 0.75 mg"] <-"Dula_0.75"
-trt_merge$TRT[trt_merge$TRT=="LY2189265 1.5 mg"] <-"Dula_1.5"
+trt_merge$TRT[trt_merge$TRT=="LY2189265 0.75 mg"] <-"Drug_0.75"
+trt_merge$TRT[trt_merge$TRT=="LY2189265 1.5 mg"] <-"Drug_1.5"
 trt_merge$aval_unchanged <- trt_merge$LBRN
 trt_merge$base_unchanged <- trt_merge$LBBLVALTR
 trt_merge$AVAL <- log(trt_merge$LBRN)
@@ -71,22 +69,22 @@ trt_merge$Change <- trt_merge$AVAL - trt_merge$BASE
 trt_merge$Change_oriscale <- trt_merge$aval_unchanged-trt_merge$base_unchanged
 trt_merge$Percent_change3 <- log(trt_merge$aval_unchanged/trt_merge$base_unchanged)
 trt_merge <- trt_merge[,c(-4,-5,-7,-8,-9)]
-gbda_comb <- trt_merge
-gbda_comb$SUBJID <- paste("GBDA",gbda_comb$SUBJID, sep="_")
+studya_comb <- trt_merge
+studya_comb$SUBJID <- paste("studya",studya_comb$SUBJID, sep="_")
 
 
-## GBDG
+## studyg
 
-lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdg/final/data/analysis/shared/adam",data_file="adlbcn.sas7bdat")
-adsl <- import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdg/final/data/analysis/shared/adam",data_file="adsl.sas7bdat")
+lab <- read.csv("labsg.csv")
+adsl <- read.csv("adslg.csv")
 
-gbdg <- lab %>% select(USUBJID, AVISIT, AVISITN, PARAM, PARAMCD, AVAL, BASE, SAFFL)
-gbdg <- gbdg %>% filter(PARAMCD =="ALBCS49C")
-gbdg <- gbdg %>% filter(SAFFL=="Y")
-gbdg <- gbdg %>% filter(AVISITN =="9")
+studyg <- lab %>% select(USUBJID, AVISIT, AVISITN, PARAM, PARAMCD, AVAL, BASE, SAFFL)
+studyg <- studyg %>% filter(PARAMCD =="ALBCS49C")
+studyg <- studyg %>% filter(SAFFL=="Y")
+studyg <- studyg %>% filter(AVISITN =="9")
 adsl_trt <- adsl %>% select(USUBJID ,TRT01A, TRT01AN)
 
-trt_merge <- merge(gbdg, adsl_trt,all=TRUE)
+trt_merge <- merge(studyg, adsl_trt,all=TRUE)
 trt_merge <- trt_merge[complete.cases(trt_merge),]
 trt_merge <- trt_merge %>% filter(SAFFL=="Y")
 trt_merge$aval_unchanged <- trt_merge$AVAL
@@ -98,24 +96,24 @@ trt_merge$Change_oriscale <- trt_merge$aval_unchanged-trt_merge$base_unchanged
 trt_merge$Percent_change3 <- log(trt_merge$aval_unchanged/trt_merge$base_unchanged)
 trt_merge <- trt_merge[,c(-2,-5,-10,-8)]
 trt_merge <- trt_merge[,c(1,2,6,3,7,8,4,5,9,10,11)]
-names(trt_merge) <- c(colnames(gbcf_comb))
+names(trt_merge) <- c(colnames(studycf_comb))
 #names(trt_merge)<- c("SUBJID", "VISID", "TRT", TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
-gbdg_comb <- trt_merge
+studyg_comb <- trt_merge
 
 
-## GBDI
+## studyi
 
 
-lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdi/final/data/analysis/shared/adam",data_file="adlbcn.sas7bdat")
-adsl <- import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdi/final/data/analysis/shared/adam",data_file="adsl.sas7bdat")
+lab <- read.csv("labsi.csv")
+adsl <- read.csv("adsli.csv")
 
-gbdi <- lab %>% select(USUBJID, AVISIT, AVISITN, PARAM, PARAMCD, AVAL, BASE, SAFFL)
-gbdi <- gbdi %>% filter(PARAMCD =="ALBCS49C")
-gbdi <- gbdi %>% filter(SAFFL=="Y")
-gbdi <- gbdi %>% filter(AVISITN =="204")
+studyi <- lab %>% select(USUBJID, AVISIT, AVISITN, PARAM, PARAMCD, AVAL, BASE, SAFFL)
+studyi <- studyi %>% filter(PARAMCD =="ALBCS49C")
+studyi <- studyi %>% filter(SAFFL=="Y")
+studyi <- studyi %>% filter(AVISITN =="204")
 adsl_trt <- adsl %>% select(USUBJID ,TRT01A, TRT01AN)
 
-trt_merge <- merge(gbdi, adsl_trt,all=TRUE)
+trt_merge <- merge(studyi, adsl_trt,all=TRUE)
 trt_merge <- trt_merge[complete.cases(trt_merge),]
 trt_merge <- trt_merge %>% filter(SAFFL=="Y")
 trt_merge$aval_unchanged <- trt_merge$AVAL
@@ -127,15 +125,15 @@ trt_merge$Change_oriscale <- trt_merge$aval_unchanged-trt_merge$base_unchanged
 trt_merge$Percent_change3 <- log(trt_merge$aval_unchanged/trt_merge$base_unchanged)
 trt_merge <- trt_merge[,c(-2,-5,-10,-8)]
 trt_merge <- trt_merge[,c(1,2,6,3,7,8,4,5,9,10,11)]
-names(trt_merge) <- c(colnames(gbcf_comb))
-gbdi_comb <- trt_merge
+names(trt_merge) <- c(colnames(studycf_comb))
+studyi_comb <- trt_merge
 
-combined <- merge(gbcf_comb, gbda_comb, all=TRUE)
-combined <- merge(combined, gbdi_comb, all=TRUE)
-combined <- merge(combined, gbdg_comb, all=TRUE)
-combined$TRT[combined$TRT=="Dula 1.5"] <-"Dula_1.5"
-combined$TRT[combined$TRT=="Dula 0.75"] <-"Dula_0.75"
-combined <- combined %>% filter(TRT =="Dula_1.5" | TRT =="Dula_0.75" | TRT =="Placebo")
+combined <- merge(studycf_comb, studya_comb, all=TRUE)
+combined <- merge(combined, studyi_comb, all=TRUE)
+combined <- merge(combined, studyg_comb, all=TRUE)
+combined$TRT[combined$TRT=="Drug 1.5"] <-"Drug_1.5"
+combined$TRT[combined$TRT=="Drug 0.75"] <-"Drug_0.75"
+combined <- combined %>% filter(TRT =="Drug_1.5" | TRT =="Drug_0.75" | TRT =="Placebo")
 #combined$Threshold <- ifelse(combined$base_unchanged>30,  "Above 30 Baseline", "Below 30 Baseline")
 
 ten <- combined %>% filter (base_unchanged<10)
@@ -181,15 +179,15 @@ fit <- lm(Change~TRT, data=lm_data)
 
 coeff_change <-data.frame(summary(fit)$coefficients)
 trt_diff <- data.frame(coeff_change[2:3,1:2])
-trt_diff$TRT <- "Dula_0.75"
-trt_diff[2,3] <-"Dula_1.5"
-trt_diff$VISID <-"Change in log(UACR) vs Placebo"
+trt_diff$TRT <- "Drug_0.75"
+trt_diff[2,3] <-"Drug_1.5"
+trt_diff$VISID <-"Change in log(biomarker) vs Placebo"
 names(trt_diff) <-c("geomean", "geoSE","TRT","VISID")
 ci1<-data.frame(confint(fit,level=0.95))
 ci1 <- data.frame(ci1[2:3,1:2])
-ci1$TRT <- "Dula_0.75"
-ci1[2,3] <-"Dula_1.5"
-ci1$VISID <-"Change in log(UACR) vs Placebo"
+ci1$TRT <- "Drug_0.75"
+ci1[2,3] <-"Drug_1.5"
+ci1$VISID <-"Change in log(biomarker) vs Placebo"
 names(ci1) <-c("Lower", "Upper","TRT","VISID")
 
 trt_diff_merge <-merge(trt_diff,ci1,all=TRUE)

@@ -1,14 +1,12 @@
-# UACR (Urine Albumin/Creatinine (g/kg))
+# Biomarker Regression Analysis
 #
-# Log transformed analysis of UACR data from study GBDC comparing various doses of study drug against Metformin.
-# Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(UACR), SD of log(UACR), and 95% confidence intervals
+# Log transformed analysis of biomarker data from Study C comparing various doses of study drug against Metformin
+# Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(biomarker), SD of log(biomarker), and 95% confidence intervals
 # Time points of interest include Baseline, Week 26 (midpoint), Week 52 (end of study), Change and Percent Change.
 #
 # Fit to model log(y) = log(y_b) + Treatment
 # After model is finished transform back by LSM=exp(LSM) and SE=exp(LSM)*SE, CI for percent change given by [exp(L)-1, exp(U)-1]
-#
-# *Library coastr is an internal package with the sole purpose of increasing the efficiency and speed of pulling data from the internal server
-#
+##
 
 library(dplyr)
 library(zoo)
@@ -17,17 +15,15 @@ library(reshape)
 suppressMessages(library(coastr))
 
 
-lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdc/final/data/analysis/shared",data_file="labs.sas7bdat")
-#subjinfo <- import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdc/final/data/analysis/shared",data_file="subjinfo.sas7bdat")
+lab <- read.csv("labs.csv")
 
-
-gbdc <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
-gbdc <- gbdc %>% filter(LBTESTABR =="MAL/CR")
+studyc <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
+studyc <- studyc %>% filter(LBTESTABR =="MAL/CR")
 #bda <- gbda %>% filter(SAFFL=="Y")
-trt_merge <- gbdc %>% filter(VISID =="1" |VISID =="12"|VISID =="8"|VISID =="801")
+trt_merge <- studyc %>% filter(VISID =="1" |VISID =="12"|VISID =="8"|VISID =="801")
 #adsl_trt <- subjinfo %>% select(SUBJID ,TRT, DURDIABULNM)
 
-#trt_merge <- merge(gbdc, adsl_trt,all=TRUE)
+#trt_merge <- merge(studyc, adsl_trt,all=TRUE)
 trt_merge <- trt_merge[complete.cases(trt_merge[,4]),]
 trt_merge <- trt_merge %>% filter (LBRUCD=="95")
 trt_merge <- na.locf(trt_merge)
@@ -79,8 +75,8 @@ diff$deltaSE <- sqrt((diff$geoSE[diff$TRT=="Insulin Glargine"])^2+(diff$geoSE)^2
 final_diff<-diff[1:2,c(1,2,8,9)]
 final_diff$VISID <-"%Change vs Glargine"
 final_diff$TRT <- as.character(final_diff$TRT)
-final_diff$TRT[final_diff$TRT=="Dula 0.75"]<-"Dula_0.75"
-final_diff$TRT[final_diff$TRT=="Dula 1.5"]<-"Dula_1.5"
+final_diff$TRT[final_diff$TRT=="Drug 0.75"]<-"Drug_0.75"
+final_diff$TRT[final_diff$TRT=="Drug 1.5"]<-"Drug_1.5"
 names(final_diff)<-c("TRT","VISID","geomean","geoSE")
 final_diff$Lower <- final_diff$geomean-qnorm(0.975)*final_diff$geoSE
 final_diff$Upper <- final_diff$geomean+qnorm(0.975)*final_diff$geoSE
@@ -98,9 +94,6 @@ check$VISID[check$VISID=="8"] <- "Week 52"
 #check[2,2] <-"Week 26"
 #check[6,2] <-"Week 26"
 
-names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(UACR)","SD of log(UACR)")
-
-
-write.csv(check, "GBDC_UACR.csv")
+names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(biomarker)","SD of log(biomarker)")
 
 

@@ -1,14 +1,12 @@
-# UACR (Urine Albumin/Creatinine (g/kg))
+# Biomarker Regression Analysis
 #
-# Log transformed analysis of UACR data from study GBDA comparing various doses of study drug against a competitor drug
-# Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(UACR), SD of log(UACR), and 95% confidence intervals
+# Log transformed analysis of biomarker data from Study G comparing various doses of study drug against competitor
+# Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(biomarker), SD of log(biomarker), and 95% confidence intervals
 # Time points of interest include Baseline, Week 26 (midpoint), Week 52 (end of study), Change and Percent Change.
 #
 # Fit to model log(y) = log(y_b) + Treatment
 # After model is finished transform back by LSM=exp(LSM) and SE=exp(LSM)*SE, CI for percent change given by [exp(L)-1, exp(U)-1]
-#
-# *Library coastr is an internal package with the sole purpose of increasing the efficiency and speed of pulling data from the internal server
-#
+##
 
 library(dplyr)
 library(EnvStats)
@@ -16,17 +14,17 @@ library(reshape)
 suppressMessages(library(coastr))
 
 
-lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbde/final/data/analysis/shared/adam",data_file="adlbcn.sas7bdat")
-adsl <- import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbde/final/data/analysis/shared/adam",data_file="adsl.sas7bdat")
+lab <- read.csv("labs.csv")
+adsl <- read.csv("adsl.csv")
 
 
-gbde <- lab %>% select(USUBJID, AVISIT, AVISITN, PARAM, PARAMCD, AVAL, BASE, SAFFL)
-gbde <- gbde %>% filter(PARAMCD =="ALBCS49C")
-gbde <- gbde %>% filter(SAFFL=="Y")
-gbde <- gbde %>% filter(AVISITN =="10" |AVISITN =="100")
+studye <- lab %>% select(USUBJID, AVISIT, AVISITN, PARAM, PARAMCD, AVAL, BASE, SAFFL)
+studye <- studye %>% filter(PARAMCD =="ALBCS49C")
+studye <- studye %>% filter(SAFFL=="Y")
+studye <- studye %>% filter(AVISITN =="10" |AVISITN =="100")
 adsl_trt <- adsl %>% select(USUBJID ,TRT01A, TRT01AN)
 
-trt_merge <- merge(gbde, adsl_trt,all=TRUE)
+trt_merge <- merge(studye, adsl_trt,all=TRUE)
 trt_merge <- trt_merge %>% filter(SAFFL=="Y")
 trt_merge$aval_unchanged <- trt_merge$AVAL
 trt_merge$base_unchanged <- trt_merge$BASE
@@ -88,10 +86,10 @@ check <- check[,c(1,2,3,5,4,6,7)]
 check[2,2] <-"Week 26"
 check[6,2] <-"Week 26"
 
-names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(UACR)","SD of log(UACR)")
+names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(biomarker)","SD of log(biomarker)")
 
 
-write.csv(check, "GBDE_UACR.csv")
+write.csv(check, "studye_biomarker.csv")
 
 
 
