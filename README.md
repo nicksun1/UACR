@@ -1,1 +1,5 @@
-# UACR
+# Biomarker Analysis
+
+It was proposed that there may be novel information to gain from performing an additional analysis of a new biomarker endpoint not typically performed. Thus this data was manipulated, log-transformed and had a regression analysis run on it to compare the effects of a study drug against both placebo and an active compactor. As a new methodology, the analysis was done for only a couple of studies at a time and then eventually spread to most relevant studies for the particular compound. Combined with each study having many unique elements and the organization structure of different studies for a compound, each study has its own analysis file which can be called by a driver program. 
+After determining the usefulness of this particular biomarker regression analysis, it was extended to assessing the majority of studies within the compound and also combined different studies together for a comprehensive look at the compound in question. The biomarker analysis was also extended to a new compound to test its viability on other compounds.
+ 

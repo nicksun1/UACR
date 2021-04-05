@@ -1,14 +1,12 @@
-# UACR (Urine Albumin/Creatinine (g/kg))
+# Biomarker Regression Analysis
 #
-# Log transformed analysis of UACR data from study GBDA comparing various doses of study drug against placebo.
-# Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(UACR), SD of log(UACR), and 95% confidence intervals
+# Log transformed analysis of biomarker data from Study A comparing various doses of study drug against placebo
+# Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(biomarker), SD of log(biomarker), and 95% confidence intervals
 # Time points of interest include Baseline, Week 26 (midpoint), Week 52 (end of study), Change and Percent Change.
 #
 # Fit to model log(y) = log(y_b) + Treatment
 # After model is finished transform back by LSM=exp(LSM) and SE=exp(LSM)*SE, CI for percent change given by [exp(L)-1, exp(U)-1]
-#
-# *Library coastr is an internal package with the sole purpose of increasing the efficiency and speed of pulling data from the internal server
-#
+##
 
 library(dplyr)
 library(EnvStats)
@@ -16,24 +14,22 @@ library(reshape)
 suppressMessages(library(coastr))
 
 
-lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbda/final/data/analysis/shared",data_file="labs.sas7bdat")
-#subjinfo <- import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdx/final/data/analysis/shared/adam",data_file="adsl.sas7bdat")
+lab <- read.csv("labs.csv")
 
-
-gbda <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
-gbda <- gbda %>% filter(LBTESTABR =="MAL/CR")
-#bda <- gbda %>% filter(SAFFL=="Y")
-trt_merge <- gbda %>% filter (LBRUCD=="95")
+studya <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
+studya <- studya %>% filter(LBTESTABR =="MAL/CR")
+#bda <- studya %>% filter(SAFFL=="Y")
+trt_merge <- studya %>% filter (LBRUCD=="95")
 trt_merge <- trt_merge %>% filter(VISID =="1" |VISID =="10")
 #adsl_trt <- subjinfo %>% select(USUBJID ,TRT, TRTSORT)
 
-#trt_merge <- merge(gbda, adsl_trt,all=TRUE)
+#trt_merge <- merge(studya, adsl_trt,all=TRUE)
 trt_merge <- trt_merge[complete.cases(trt_merge[,4]),]
 
-trt_merge$TRT[trt_merge$TRT=="Placebo/LY2189265 1.5 mg"] <-"Placebo"
-trt_merge$TRT[trt_merge$TRT=="Placebo/LY2189265 0.75 mg"] <-"Placebo"
-trt_merge$TRT[trt_merge$TRT=="LY2189265 0.75 mg"] <-"Dula 0.75"
-trt_merge$TRT[trt_merge$TRT=="LY2189265 1.5 mg"] <-"Dula 1.5"
+trt_merge$TRT[trt_merge$TRT=="Placebo/LY 1.5 mg"] <-"Placebo"
+trt_merge$TRT[trt_merge$TRT=="Placebo/LY 0.75 mg"] <-"Placebo"
+trt_merge$TRT[trt_merge$TRT=="LY 0.75 mg"] <-"Drug 0.75"
+trt_merge$TRT[trt_merge$TRT=="LY 1.5 mg"] <-"Drug 1.5"
 trt_merge$aval_unchanged <- trt_merge$LBRN
 trt_merge$base_unchanged <- trt_merge$LBBLVALTR
 trt_merge$AVAL <- log(trt_merge$LBRN)
@@ -57,15 +53,15 @@ fit <- lm(Change~TRT, data=lm_data)
 
 coeff_change <-data.frame(summary(fit)$coefficients)
 trt_diff <- data.frame(coeff_change[2:3,1:2])
-trt_diff$TRT <- "Dula_0.75"
-trt_diff[2,3] <-"Dula_1.5"
-trt_diff$VISID <-"Change in log(UACR) vs Placebo"
+trt_diff$TRT <- "Drug_0.75"
+trt_diff[2,3] <-"Drug_1.5"
+trt_diff$VISID <-"Change in log(biomaker) vs Placebo"
 names(trt_diff) <-c("geomean", "geoSE","TRT","VISID")
 ci1<-data.frame(confint(fit,level=0.95))
 ci1 <- data.frame(ci1[2:3,1:2])
-ci1$TRT <- "Dula_0.75"
-ci1[2,3] <-"Dula_1.5"
-ci1$VISID <-"Change in log(UACR) vs Placebo"
+ci1$TRT <- "Drug_0.75"
+ci1[2,3] <-"Drug_1.5"
+ci1$VISID <-"Change in log(biomaker) vs Placebo"
 names(ci1) <-c("Lower", "Upper","TRT","VISID")
 
 ci_merge <- merge(trt_diff, ci1,all=TRUE)
@@ -91,8 +87,8 @@ final_diff<-diff[,c(1,2,8,9)]
 final_diff<-final_diff %>% filter(TRT!="Placebo")
 final_diff$VISID <-"%Change vs Placebo"
 final_diff$TRT <- as.character(final_diff$TRT)
-final_diff$TRT[final_diff$TRT=="Dula 0.75"]<-"Dula_0.75"
-final_diff$TRT[final_diff$TRT=="Dula 1.5"]<-"Dula_1.5"
+final_diff$TRT[final_diff$TRT=="Drug 0.75"]<-"Drug_0.75"
+final_diff$TRT[final_diff$TRT=="Drug 1.5"]<-"Drug_1.5"
 names(final_diff)<-c("TRT","VISID","geomean","geoSE")
 final_diff$Lower <- final_diff$geomean-qnorm(0.975)*final_diff$geoSE
 final_diff$Upper <- final_diff$geomean+qnorm(0.975)*final_diff$geoSE
@@ -107,8 +103,7 @@ check$VISID[check$VISID=="10"] <- "Week 26"
 check <- check[c(13,14,15,16,1,2,3,4,9,10,5,6,7,8,11,12),]
 check <- check[,c(1,2,5,4,3,6,7,8,9)]
 
-names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(UACR)","SD of log(UACR)","Lower","Upper")
+names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(biomaker)","SD of log(biomaker)","Lower","Upper")
 
-write.csv(check, "GBDA_UACR.csv")
 
 

@@ -1,11 +1,15 @@
-Package: UACR
+Package: Biomarker Analysis
 Type: Package
-Title: What the Package Does (Title Case)
+Title: MMRM Analysis of New Biomarker
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Authors@R: 
+    person("Nicholas", "Sun", email = "nicksun12345@gmail.com", role = c("aut", "cre"))
+Description: Package that provides a regression analysis for a new biomarker not typically looked at to see if it could provide new information on an old compound.
+    Includes multiple studies from the compound trials comparing against active comparators and placebo. Outputs a summary of the regression analysis including 
+    means, geometric means, change, percent change, 95% confidence intervals, and relevant standard errors. Additionally includes comprehensive look at compound 
+    through lens of new biomaker with various combined analysis'. Also includes a quick look at application towards other compounds. Run through a driver program 
+    which calls each program.
 Encoding: UTF-8
 LazyData: true
+# Summary and Analysis of UACR including percent change from baseline via log-transformed analysis MMRM from baseline through 52 weeks
+# Least square mean percent change and standard error between study drug and placebo

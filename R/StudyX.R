@@ -1,14 +1,13 @@
-# UACR (Urine Albumin/Creatinine (g/kg))
+# Biomarker Regression Analysis
 #
-# Log transformed analysis of UACR data from study GBDA comparing various doses of study drug against insulin glargine
-# Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(UACR), SD of log(UACR), and 95% confidence intervals
+# Log transformed analysis of biomarker data from Study X comparing various doses of study drug against insulin glargine
+# Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(biomarker), SD of log(biomarker), and 95% confidence intervals
 # Time points of interest include Baseline, Week 26 (midpoint), Week 52 (end of study), Change and Percent Change.
 #
 # Fit to model log(y) = log(y_b) + Treatment
 # After model is finished transform back by LSM=exp(LSM) and SE=exp(LSM)*SE, CI for percent change given by [exp(L)-1, exp(U)-1]
-#
-# *Library coastr is an internal package with the sole purpose of increasing the efficiency and speed of pulling data from the internal server
-#
+##
+
 
 
 library(dplyr)
@@ -16,18 +15,17 @@ library(EnvStats)
 library(reshape)
 suppressMessages(library(coastr))
 
+lab <- read.csv("labs.csv")
+adsl <- read.csv("adsl.csv")
 
-lab <-import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdx/final/data/analysis/shared/adam",data_file="adlbcn.sas7bdat")
-adsl <- import_cluwe_data(source_path="/lillyce/prd/ly2189265/h9x_mc_gbdx/final/data/analysis/shared/adam",data_file="adsl.sas7bdat")
 
-
-gbdx <- lab %>% select(USUBJID, AVISIT, AVISITN, PARAM, PARAMCD, AVAL, BASE, SAFFL)
-gbdx <- gbdx %>% filter(PARAMCD =="ALBCS49C")
-gbdx <- gbdx %>% filter(SAFFL=="Y")
-gbdx <- gbdx %>% filter(AVISITN =="0" |AVISITN =="25")
+studyx <- lab %>% select(USUBJID, AVISIT, AVISITN, PARAM, PARAMCD, AVAL, BASE, SAFFL)
+studyx <- studyx %>% filter(PARAMCD =="ALBCS49C")
+studyx <- studyx %>% filter(SAFFL=="Y")
+studyx <- studyx %>% filter(AVISITN =="0" |AVISITN =="25")
 adsl_trt <- adsl %>% select(USUBJID ,TRT01A, TRT01AN)
 
-trt_merge <- merge(gbdx, adsl_trt,all=TRUE)
+trt_merge <- merge(studyx, adsl_trt,all=TRUE)
 trt_merge <- trt_merge[complete.cases(trt_merge),]
 trt_merge <- trt_merge %>% filter(SAFFL=="Y")
 trt_merge$aval_unchanged <- trt_merge$AVAL
@@ -52,15 +50,15 @@ lm_data <- lm_data[complete.cases(lm_data[,13]),]
 fit <- lm(Change~TRT01A, data=lm_data)
 coefficients <-data.frame(summary(fit)$coefficients)
 vsplacebo_glargine <- data.frame(coefficients[2:3,1:2])
-vsplacebo_glargine$TRT01A <- "Dula_0.75"
-vsplacebo_glargine[2,3] <-"Dula_1.5"
+vsplacebo_glargine$TRT01A <- "Drug_0.75"
+vsplacebo_glargine[2,3] <-"Drug_1.5"
 vsplacebo_glargine$AVISIT <-"%Change vs Glargine"
 names(vsplacebo_glargine) <-c("AVAL", "SE","TRT01A","AVISIT")
 vsplacebo_glargine2 <- vsplacebo_glargine %>% group_by(TRT01A,AVISIT) %>% summarise( geomean =exp(AVAL)-1, geoSE= exp(AVAL)*SE)
 ci<-data.frame(confint(fit,level=0.95))
 ci <- data.frame(ci[2:3,1:2])
-ci$TRT01A <- "Dula_0.75"
-ci[2,3] <-"Dula_1.5"
+ci$TRT01A <- "Drug_0.75"
+ci[2,3] <-"Drug_1.5"
 ci$AVISIT <-"%Change vs Glargine"
 names(ci) <-c("Lower", "Upper","TRT01A","AVISIT")
 ci_hold <- ci   %>% group_by(TRT01A,AVISIT) %>% summarise( Lower =exp(Lower)-1, Upper=exp(Upper)-1)
@@ -68,15 +66,15 @@ ci_hold <- ci   %>% group_by(TRT01A,AVISIT) %>% summarise( Lower =exp(Lower)-1, 
 
 coeff_change <-data.frame(summary(fit)$coefficients)
 trt_diff <- data.frame(coeff_change[2:3,1:2])
-trt_diff$TRT01A <- "Dula_0.75"
-trt_diff[2,3] <-"Dula_1.5"
-trt_diff$AVISIT <-"Change in log(UACR) vs Glargine"
+trt_diff$TRT01A <- "Drug_0.75"
+trt_diff[2,3] <-"Drug_1.5"
+trt_diff$AVISIT <-"Change in log(biomarker) vs Glargine"
 names(trt_diff) <-c("geomean", "geoSE","TRT01A","AVISIT")
 ci1<-data.frame(confint(fit,level=0.95))
 ci1 <- data.frame(ci1[2:3,1:2])
-ci1$TRT01A <- "Dula_0.75"
-ci1[2,3] <-"Dula_1.5"
-ci1$AVISIT <-"Change in log(UACR) vs Glargine"
+ci1$TRT01A <- "Drug_0.75"
+ci1[2,3] <-"Drug_1.5"
+ci1$AVISIT <-"Change in log(biomarker) vs Glargine"
 names(ci1) <-c("Lower", "Upper","TRT01A","AVISIT")
 
 ci_merge <- merge(trt_diff, ci1,all=TRUE)
@@ -109,8 +107,8 @@ diff$deltaSE <- sqrt((diff$geoSE[diff$TRT=="Glargine"])^2+(diff$geoSE)^2)
 final_diff<-diff[1:2,c(1,2,8,9)]
 final_diff$VISID <-"%Change vs Glargine"
 final_diff$TRT <- as.character(final_diff$TRT)
-final_diff$TRT[final_diff$TRT=="Dula 0.75"]<-"Dula_0.75"
-final_diff$TRT[final_diff$TRT=="Dula 1.5"]<-"Dula_1.5"
+final_diff$TRT[final_diff$TRT=="Drug 0.75"]<-"Drug_0.75"
+final_diff$TRT[final_diff$TRT=="Drug 1.5"]<-"Drug_1.5"
 names(final_diff)<-c("TRT","VISID","geomean","geoSE")
 final_diff$Lower <- final_diff$geomean-qnorm(0.975)*final_diff$geoSE
 final_diff$Upper <- final_diff$geomean+qnorm(0.975)*final_diff$geoSE
@@ -123,10 +121,10 @@ check <- check[c(13,16,14,15,2,6,3,5,4,1,8,12,9,11,10,7),]
 check <- check[,c(1,2,5,4,3,6,7,8,9)]
 
 
-names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(UACR)","SD of log(UACR)","Lower","Upper")
+names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(biomarker)","SD of log(biomarker)","Lower","Upper")
 
 
-write.csv(check, "GBDX_UACR.csv")
+write.csv(check, "studyx_biomarker.csv")
 
 
 
