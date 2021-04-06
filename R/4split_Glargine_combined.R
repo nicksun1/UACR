@@ -91,12 +91,11 @@ studyx_comb <- trt_merge
 
 combined <- merge(studyd_comb, studyb_comb, all=TRUE)
 combined <- merge(combined, studyx_comb, all=TRUE)
-combined$TRT[combined$TRT=="Drug 1.5"] <-"Drug_1.5"
-combined$TRT[combined$TRT=="Drug 0.75"] <-"Drug_0.75"
-combined$TRT[combined$TRT=="Insulin Glargine"] <-"Glargine"
 #combined$Threshold <- ifelse(combined$base_unchanged>30,  "Above 30 Baseline", "Below 30 Baseline")
 
 
+
+#### Combine studies and Filter by biomarker value
 ten <- combined %>% filter (base_unchanged<10)
 thirty <- combined %>% filter (base_unchanged>=10 & base_unchanged<30)
 threehundred <- combined %>% filter (base_unchanged>=30 & base_unchanged<300)
@@ -111,10 +110,6 @@ num_patients <- merge(num_patients,threehundred,all=TRUE)
 num_patients <- merge(num_patients,overhundred,all=TRUE)
 num <- num_patients %>% group_by(TRT,Split) %>% summarise( n=n() )
 
-
-#combined_above <- ten
-#combined_above <- thirty
-#combined_above <- threehundred
 combined_above <- overhundred
 
 
@@ -142,14 +137,10 @@ fit <- lm(Change~TRT, data=lm_data)
 
 coeff_change <-data.frame(summary(fit)$coefficients)
 trt_diff <- data.frame(coeff_change[2:3,1:2])
-trt_diff$TRT <- "Drug_0.75"
-trt_diff[2,3] <-"Drug_1.5"
 trt_diff$VISID <-"Change in log(biomarker) vs Glargine"
 names(trt_diff) <-c("geomean", "geoSE","TRT","VISID")
 ci1<-data.frame(confint(fit,level=0.95))
 ci1 <- data.frame(ci1[2:3,1:2])
-ci1$TRT <- "Drug_0.75"
-ci1[2,3] <-"Drug_1.5"
 ci1$VISID <-"Change in log(biomarker) vs Glargine"
 names(ci1) <-c("Lower", "Upper","TRT","VISID")
 
@@ -159,9 +150,6 @@ final_diff$Threshold <- "<10"
 final_diff<- final_diff[,c(7,1,2,3,4,5,6)]
 names(final_diff) <- c("Threshold","Treatment", "Comparison", "Mean", "SE","Lower","Upper")
 
-#final_diff_10 <- final_diff
-#final_diff_30 <- final_diff
-#final_diff_300 <- final_diff
 final_diff_max <- final_diff
 
 final_diff_30$Threshold <- ">=10 and <30"
@@ -175,7 +163,7 @@ final_merge<-merge(final_merge,final_diff_max,all=TRUE)
 write.csv(final_merge, "Glargine_comparison_4_thresholds.csv")
 
 
-####
+#### Summary function
 split_summary <-function( data, split){
 
 data$VISID<-"Last Visit"

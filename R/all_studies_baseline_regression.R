@@ -28,11 +28,6 @@ trt_merge <- studycf %>% filter (LBRUCD=="95")
 trt_merge <- trt_merge  %>% filter( VISID =="9") ###################
 trt_merge <- trt_merge[complete.cases(trt_merge[,4]),]
 
-trt_merge$TRT[trt_merge$TRT=="Placebo/Sitagliptin"] <-"Placebo"
-trt_merge$TRT[trt_merge$TRT=="LY 1.5mg"] <-"Drug_1.5"
-trt_merge$TRT[trt_merge$TRT=="LY 0.75mg"] <-"Drug_0.75"
-trt_merge <- trt_merge %>% filter(TRT=="Placebo" | TRT=="Drug_1.5" | TRT=="Drug_0.75"|TRT=="Sitagliptin")
-
 trt_merge$aval_unchanged <- trt_merge$LBRN
 trt_merge$base_unchanged <- trt_merge$LBBLVALTR
 trt_merge$AVAL <- log(trt_merge$LBRN)
@@ -52,18 +47,11 @@ studycf_comb$Study <- "studycf"
 lab <- read.csv("labsa.csv")
 studya <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
 studya <- studya %>% filter(LBTESTABR =="MAL/CR")
-#bda <- studya %>% filter(SAFFL=="Y")
 trt_merge <- studya %>% filter (LBRUCD=="95")
 trt_merge <- trt_merge %>% filter(VISID =="1" |VISID =="10")
-#adsl_trt <- subjinfo %>% select(USUBJID ,TRT, TRTSORT)
 
-#trt_merge <- merge(studya, adsl_trt,all=TRUE)
 trt_merge <- trt_merge[complete.cases(trt_merge[,4]),]
 
-trt_merge$TRT[trt_merge$TRT=="Placebo/LY2189265 1.5 mg"] <-"Placebo"
-trt_merge$TRT[trt_merge$TRT=="Placebo/LY2189265 0.75 mg"] <-"Placebo"
-trt_merge$TRT[trt_merge$TRT=="LY2189265 0.75 mg"] <-"Drug_0.75"
-trt_merge$TRT[trt_merge$TRT=="LY2189265 1.5 mg"] <-"Drug_1.5"
 trt_merge$aval_unchanged <- trt_merge$LBRN
 trt_merge$base_unchanged <- trt_merge$LBBLVALTR
 trt_merge$AVAL <- log(trt_merge$LBRN)
@@ -100,7 +88,6 @@ trt_merge$Percent_change3 <- log(trt_merge$aval_unchanged/trt_merge$base_unchang
 trt_merge <- trt_merge[,c(-2,-5,-10,-8)]
 trt_merge <- trt_merge[,c(1,2,6,3,7,8,4,5,9,10,11)]
 names(trt_merge) <- c(colnames(studycf_comb))
-#names(trt_merge)<- c("SUBJID", "VISID", "TRT", TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
 studyg_comb <- trt_merge
 studyg_comb$Study <- "studyg"
 
@@ -159,13 +146,11 @@ studyd_comb$Study <- "studyd"
 ## studyb
 lab <- read.csv("labsb.csv")
 
-
 studyb <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, LBBLVALTR,LBRUCD)
 studyb <- studyb %>% filter(LBTESTABR =="MAL/CR")
 trt_merge <- studyb %>% filter( VISID =="16") ###################
 trt_merge <- trt_merge[complete.cases(trt_merge[,4]),]
 trt_merge <- trt_merge %>% filter (LBRUCD=="95")
-#trt_merge$LBBLVALTR[is.na(trt_merge$LBBLVALTR)] <- trt_merge$LBRN
 
 trt_merge$aval_unchanged <- trt_merge$LBRN
 trt_merge$base_unchanged <- trt_merge$LBBLVALTR
@@ -217,15 +202,11 @@ studyc <- lab %>% select(SUBJID, VISID, TRT, TRTSORT, LBTESTABR, LBTEST, LBRN, L
 studyc <- studyc %>% filter(LBTESTABR =="MAL/CR")
 #bda <- studya %>% filter(SAFFL=="Y")
 trt_merge <- studyc %>% filter(VISID =="1" |VISID =="12"|VISID =="8"|VISID =="801")
-#adsl_trt <- subjinfo %>% select(SUBJID ,TRT, DURDIABULNM)
 
-#trt_merge <- merge(studyc, adsl_trt,all=TRUE)
 trt_merge <- trt_merge[complete.cases(trt_merge[,4]),]
 trt_merge <- trt_merge %>% filter (LBRUCD=="95")
 trt_merge <- na.locf(trt_merge)
-#trt_merge$LBBLVALTR[is.na(trt_merge$LBBLVALTR)] <- trt_merge$LBRN
 
-#trt_merge <- trt_merge %>% filter(SAFFL=="Y")
 trt_merge$aval_unchanged <- trt_merge$LBRN
 trt_merge$base_unchanged <- trt_merge$LBBLVALTR
 trt_merge$AVAL <- log(trt_merge$LBRN)
@@ -267,6 +248,9 @@ trt_merge <- trt_merge[,c(1,2,6,3,7,8,4,5,9,10,11)]
 names(trt_merge) <- c(colnames(studyd_comb))
 studye_comb <- trt_merge
 studye_comb$Study <- "studye"
+
+
+###### Combine studies and Filter by biomarker value
 
 studya_comb <- studya_comb[complete.cases(studya_comb),]
 studye_comb <- studye_comb[complete.cases(studye_comb),]
@@ -355,8 +339,6 @@ write.csv(threshold_glargine, "Baseline Summary Glargine_30.csv")
 
 ## Regression analysis
 
-#fit_placebo <- lm(Change~BASE + TRT, data=all)
-#regressiondata_placebo <- all %>% filter(TRT=="Placebo")
 
 pdf("biomarker_regression_plots.pdf")
 
