@@ -15,7 +15,7 @@ library(EnvStats)
 library(reshape)
 suppressMessages(library(coastr))
 
-
+## Load and clean data
 lab <- read.csv("labs.csv")
 
 
@@ -41,6 +41,7 @@ trt_merge$Percent_change3 <- log(trt_merge$aval_unchanged/trt_merge$base_unchang
 trt_merge <- trt_merge[complete.cases(trt_merge[,14]),]
 trt_merge <- trt_merge %>% filter(TRT!="Sitagliptin")
 
+# Quick summary of data-geomean
 detach("package:plyr", unload=TRUE)
 visit_sum_last <- trt_merge %>% group_by(TRT,VISID) %>% summarise( mean= mean(AVAL),n=n(), sd =sd(AVAL), geomean =geoMean(aval_unchanged), geoSE= geoSD(aval_unchanged))
 visit_sum_last$VISID <- "Week 26"
@@ -48,6 +49,7 @@ visit_sum_base <- trt_merge %>% group_by(TRT,VISID) %>% summarise( mean= mean(BA
 visit_sum_base$VISID <- "Baseline"
 visit_sum <- merge(visit_sum_last, visit_sum_base,all=TRUE)
 
+## Regression with CI
 trt_merge$TRT<-as.factor(trt_merge$TRT)
 trt_merge$TRT = relevel(trt_merge$TRT, ref="Placebo")
 lm_data <- trt_merge
@@ -57,15 +59,10 @@ fit <- lm(Change~TRT, data=lm_data)
 
 coeff_change <-data.frame(summary(fit)$coefficients)
 trt_diff <- data.frame(coeff_change[2:3,1:2])
-trt_diff$TRT <- "Drug_0.75"
-trt_diff[2,3] <-"Drug_1.5"
-trt_diff$VISID <-"Change in log(biomarker) vs Placebo"
 names(trt_diff) <-c("geomean", "geoSE","TRT","VISID")
 ci1<-data.frame(confint(fit,level=0.95))
 ci1 <- data.frame(ci1[2:3,1:2])
-ci1$TRT <- "Drug_0.75"
-ci1[2,3] <-"Drug_1.5"
-ci1$VISID <-"Change in log(biomarker) vs Placebo"
+
 names(ci1) <-c("Lower", "Upper","TRT","VISID")
 
 ci_merge <- merge(trt_diff, ci1,all=TRUE)
@@ -78,6 +75,7 @@ hold2 <- temp3 %>% group_by(TRT, VISID) %>% summarise( mean= mean(log(aval_uncha
 change_sum <- hold2
 change_sum$VISID ="Change"
 
+## Add and Summarize Percent Change and CI
 percent_change_sum2<- temp3 %>% group_by(TRT, VISID) %>% summarise( geomean= (exp(mean(Percent_change3))-1)*100 ,
                                                                     geoSE =( exp(mean(Percent_change3))*100*(sd(Percent_change3)/sqrt(n()))),n=n() )
 percent_change_sum2$VISID <- "Percent_Change"
@@ -102,6 +100,8 @@ final_diff<-final_diff[order(final_diff$TRT),]
 
 check <- merge(check, final_diff, all=TRUE)
 
+
+## Reformat
 check <- check[c(13,16,14,15,4,2,3,10,9,5,8,6,7,12,11),]
 check <- check[,c(1,2,5,4,3,6,7,8,9)]
 
