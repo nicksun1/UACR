@@ -1,6 +1,6 @@
 # Biomarker Regression Analysis
 #
-# Log transformed analysis of biomarker data from Study G comparing various doses of study drug against competitor
+# Log transformed analysis of biomarker data from Study E
 # Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(biomarker), SD of log(biomarker), and 95% confidence intervals
 # Time points of interest include Baseline, Week 26 (midpoint), Week 52 (end of study), Change and Percent Change.
 #
@@ -13,7 +13,7 @@ library(EnvStats)
 library(reshape)
 suppressMessages(library(coastr))
 
-
+## Load and clean data
 lab <- read.csv("labs.csv")
 adsl <- read.csv("adsl.csv")
 
@@ -39,7 +39,7 @@ trt_merge$Percent_change3 <- log(trt_merge$aval_unchanged/trt_merge$base_unchang
 detach("package:plyr", unload=TRUE)
 visit_sum <- trt_merge %>% group_by(TRT01A, AVISIT) %>% summarise( mean= mean(AVAL),n=n(), sd =sd(AVAL), geomean =geoMean(aval_unchanged), geoSE= geoSD(aval_unchanged))
 
-
+## Percent Change and Change
 hold_change <- trt_merge %>% filter(AVISITN=="10")
 hold_change <- hold_change %>% select(USUBJID,Change, TRT01A)
 hold_change <- hold_change[complete.cases(hold_change),]
@@ -57,7 +57,7 @@ hold_pchange_long$aval_unchanged <- hold_percentchange$Percent_change
 asdf <- merge(hold_pchange_long, hold_change_long, all=TRUE)
 names(asdf) <- c("USUBJID","TRT01A","AVISIT", "AVAL","aval_unchanged")
 
-
+## Summary
 asdf2 <- merge(asdf, trt_merge,all= TRUE)
 asdf3 <- trt_merge%>% filter(AVISITN=="10")
 asdf3$Change[asdf3$Change==0]<- NA
@@ -68,19 +68,17 @@ hold2 <- asdf3 %>% group_by(TRT01A, AVISIT) %>% summarise( mean= mean(log(aval_u
 change_sum <- hold2
 change_sum$AVISIT ="Change"
 
-something<- asdf3 %>% group_by(TRT01A, AVISIT) %>% summarise( mean= (exp(mean(log(aval_unchanged)-log(base_unchanged)))-1)*100, se =(exp(mean(log(aval_unchanged)-log(base_unchanged)))-1)*100 *(sd(log(aval_unchanged)-log(base_unchanged))/sqrt(n())),n=n())
-#percent_change_sum <- asdf3 %>% group_by(TRT01A, AVISIT) %>% summarise( mean= (exp(mean(Percent_change3))-1)*100 , se = (exp(mean(Percent_change3))-1)*100*sd(Percent_change3),n=n() )
+summary<- asdf3 %>% group_by(TRT01A, AVISIT) %>% summarise( mean= (exp(mean(log(aval_unchanged)-log(base_unchanged)))-1)*100, se =(exp(mean(log(aval_unchanged)-log(base_unchanged)))-1)*100 *(sd(log(aval_unchanged)-log(base_unchanged))/sqrt(n())),n=n())
 percent_change_sum2<- asdf3 %>% group_by(TRT01A, AVISIT) %>% summarise( geomean= (exp(mean(Percent_change3))-1)*100 ,
                                                                         geoSE =( exp(mean(Percent_change3))*100*(sd(Percent_change3)/sqrt(n()))),n=n() )
 
-#percent_change_sum3<- asdf3 %>% group_by(TRT01A, AVISIT) %>% summarise( mean= mean(Percent_change3), se = (sd(Percent_change3)/sqrt(n())),n=n() )
 
 percent_change_sum2$AVISIT <- "Percent_Change"
 
 check <- merge(visit_sum, change_sum, all=TRUE)
 check <- merge(check, percent_change_sum2, all=TRUE)
 
-
+# Reformat
 check <- check[c(1,4,2,3,5,8,6,7),]
 check <- check[,c(1,2,3,5,4,6,7)]
 check[2,2] <-"Week 26"
@@ -89,7 +87,6 @@ check[6,2] <-"Week 26"
 names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(biomarker)","SD of log(biomarker)")
 
 
-write.csv(check, "studye_biomarker.csv")
 
 
 

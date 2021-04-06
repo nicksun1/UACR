@@ -1,6 +1,6 @@
 # Biomarker Regression Analysis
 #
-# Log transformed analysis of biomarker data from Study J comparing various doses of study drug against placebo
+# Log transformed analysis of biomarker data from Study J
 # Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(biomarker), SD of log(biomarker), and 95% confidence intervals
 # Time points of interest include Baseline, Week 26 (midpoint), Week 52 (end of study), Change and Percent Change.
 #
@@ -10,12 +10,12 @@
 
 
 
-
 library(dplyr)
 library(EnvStats)
 library(reshape)
 suppressMessages(library(coastr))
 
+## Load and clean data
 lab <- read.csv("labs.csv")
 adsl <- read.csv("adsl.csv")
 
@@ -26,20 +26,12 @@ studyj <- studyj %>% filter(SAFFL=="Y")
 
 year2<- dplyr:: filter(studyj, grepl("12",AVISIT))
 year2<- year2[!grepl("12",year2$AVISITN),]
-#year1<- dplyr:: filter(studyj, grepl("24",AVISIT))
-
-#qwer<-year1[year1$USUBJID %in% setdiff(year1$USUBJID,year2$USUBJID),]
 
 studyj_new <- year2
-#studyj_new <-merge(year2,qwer,all=TRUE)
 studyj_new$VISIT <- "Visit 12 Months"
 ttt <- studyj %>%filter(AVISIT=="BASELINE")
 ttt$VISIT <-"Baseline"
 studyj_new <- merge(studyj_new, ttt, all=TRUE)
-
-#studyj <- studyj %>% filter(VISIT =="FINAL VISIT")
-#pattern<- c("72","Visit 3")
-#studyj<- dplyr:: filter(studyj, grepl(paste(pattern, collapse="|"),AVISIT))
 
 adsl_trt <- adsl %>% select(USUBJID ,TRT01A, TRT01AN)
 
@@ -60,6 +52,8 @@ trt_merge<- trt_merge[-row(trt_merge)[trt_merge$base_unchanged == 0],]
 detach("package:plyr", unload=TRUE)
 visit_sum <- trt_merge %>% group_by(TRT01A, VISIT) %>% summarise( mean= mean(AVAL),n=n(), sd =sd(AVAL), geomean =geoMean(aval_unchanged), geoSE= geoSD(aval_unchanged))
 
+
+## Regression analysis
 trt_merge$TRT01A<-as.factor(trt_merge$TRT01A)
 trt_merge$TRT01A = relevel(trt_merge$TRT01A, ref="Placebo")
 lm_data <- trt_merge
@@ -71,35 +65,24 @@ lm_data <- lm_data[complete.cases(lm_data[,13]),]
 fit <- lm(Change~TRT01A, data=lm_data)
 coefficients <-data.frame(summary(fit)$coefficients)
 vsplacebo_glargine <- data.frame(coefficients[2,1:2])
-vsplacebo_glargine$TRT01A <- "Drug_1.5"
-vsplacebo_glargine$AVISIT <-"%Change vs Placebo"
 names(vsplacebo_glargine) <-c("AVAL", "SE","TRT01A","VISIT")
 vsplacebo_glargine2 <- vsplacebo_glargine %>% group_by(TRT01A,VISIT) %>% summarise( geomean =exp(AVAL)-1, geoSE= exp(AVAL)*SE)
 ci<-data.frame(confint(fit,level=0.95))
 ci <- data.frame(ci[2,1:2])
-ci$TRT01A <- "Drug_1.5"
-ci$AVISIT <-"%Change vs Placebo"
 names(ci) <-c("Lower", "Upper","TRT01A","VISIT")
 ci_hold <- ci   %>% group_by(TRT01A,VISIT) %>% summarise( Lower =exp(Lower)-1, Upper=exp(Upper)-1)
 
 coeff_change <-data.frame(summary(fit)$coefficients)
 trt_diff <- data.frame(coeff_change[2,1:2])
-trt_diff$TRT01A <- "Drug_1.5"
-trt_diff$AVISIT <-"Change in log(biomarker) vs Placebo"
 names(trt_diff) <-c("geomean", "geoSE","TRT01A","VISIT")
 ci1<-data.frame(confint(fit,level=0.95))
 ci1 <- data.frame(ci1[2,1:2])
-ci1$TRT01A <- "Drug_1.5"
-ci1$AVISIT <-"Change in log(biomarker) vs Placebo"
 names(ci1) <-c("Lower", "Upper","TRT01A","VISIT")
 
 ci_merge <- merge(trt_diff, ci1,all=TRUE)
 names(ci_merge)<- c("TRT","VISID","geomean","geoSE","Lower","Upper")
 
-#trt_diff_merge <-merge(trt_diff,vsplacebo_glargine2,all=TRUE)
-#final_diff <- merge(ci_merge, trt_diff_merge,all=TRUE)
-#final_diff[c(1,3),3:6]<-final_diff[c(1,3),3:6]*100
-
+## Summary
 asdf3 <- trt_merge%>% filter(VISIT=="Visit 12 Months")
 asdf3$Change[asdf3$Change==0]<- NA
 asdf3 <- asdf3[complete.cases(asdf3),]
@@ -110,6 +93,7 @@ change_sum$VISIT ="Change"
 percent_change_sum2<- asdf3 %>% group_by(TRT01A, VISIT) %>% summarise( geomean= (exp(mean(Percent_change3))-1)*100 ,
                                                                         geoSE =( exp(mean(Percent_change3))*100*(sd(Percent_change3)/sqrt(n()))),n=n() )
 
+## Add Percent Change
 percent_change_sum2$VISIT <- "Percent_Change"
 
 check <- merge(visit_sum, change_sum, all=TRUE)
@@ -121,10 +105,7 @@ diff$delta <- diff$geomean-diff$geomean[diff$TRT=="Placebo"]
 diff$deltaSE <- sqrt((diff$geoSE[diff$TRT=="Placebo"])^2+(diff$geoSE)^2)
 final_diff<-diff[,c(1,2,8,9)]
 final_diff<-final_diff %>% filter(TRT!="Placebo")
-final_diff$VISID <-"%Change vs Placebo"
 final_diff$TRT <- as.character(final_diff$TRT)
-final_diff$TRT[final_diff$TRT=="Drug 0.75"]<-"Drug_0.75"
-final_diff$TRT[final_diff$TRT=="Drug 1.5"]<-"Drug_1.5"
 names(final_diff)<-c("TRT","VISID","geomean","geoSE")
 final_diff$Lower <- final_diff$geomean-qnorm(0.975)*final_diff$geoSE
 final_diff$Upper <- final_diff$geomean+qnorm(0.975)*final_diff$geoSE
@@ -141,9 +122,6 @@ check <- check[,c(1,2,5,4,3,6,7,8,9)]
 names(check) <- c("Treatment","Time Point","N","Geometric Mean","SE for Geometric Mean","Mean of log(biomarker)","SD of log(biomarker)","Lower","Upper")
 
 
-write.csv(check, "12month_studyj_biomarker.csv")
-
-
 ten <- trt_merge %>% filter (base_unchanged<10)
 thirty <- trt_merge %>% filter (base_unchanged>=10 & base_unchanged<30)
 threehundred <- trt_merge %>% filter (base_unchanged>=30 & base_unchanged<300)
@@ -155,7 +133,7 @@ threehundred$Split<-  ">=30 and <300"
 overhundred$Split<-  ">=300"
 
 
-####
+#### Summary Function
 split_summary <-function( data, split){
 
   data$VISID<-"Visit 12 Months"
@@ -165,7 +143,6 @@ split_summary <-function( data, split){
   visit_sum <- merge(visit_sum_last, visit_sum_base,all=TRUE)
 
   asdf3 <- data
-  #asdf3$Change[asdf3$Change==0]<- NA
   asdf3 <- asdf3[complete.cases(asdf3),]
 
   hold2 <- asdf3 %>% group_by(TRT01A, VISID,Split) %>% summarise( mean= mean(log(aval_unchanged)-log(base_unchanged)), n= n(), sd =(sd(log(aval_unchanged)-log(base_unchanged))),
@@ -191,13 +168,9 @@ split_summary <-function( data, split){
 
   coeff_change <-data.frame(summary(fit)$coefficients)
   trt_diff <- data.frame(coeff_change[2,1:2])
-  trt_diff$TRT01A <- "Drug_1.5"
-  trt_diff$AVISIT <-"Change in log(biomarker) vs Placebo"
   names(trt_diff) <-c("geomean", "geoSE","TRT01A","VISIT")
   ci1<-data.frame(confint(fit,level=0.95))
   ci1 <- data.frame(ci1[2,1:2])
-  ci1$TRT01A <- "Drug_1.5"
-  ci1$AVISIT <-"Change in log(biomarker) vs Placebo"
   names(ci1) <-c("Lower", "Upper","TRT01A","VISIT")
 
   ci_merge <- merge(trt_diff, ci1,all=TRUE)
@@ -214,10 +187,7 @@ split_summary <-function( data, split){
   diff$deltaSE <- sqrt((diff$geoSE[diff$TRT=="Placebo"])^2+(diff$geoSE)^2)
   final_diff<-diff[,c(1,2,9,10)]
   final_diff<-final_diff %>% filter(TRT!="Placebo")
-  final_diff$VISID <-"%Change vs Placebo"
   final_diff$TRT <- as.character(final_diff$TRT)
-  final_diff$TRT[final_diff$TRT=="Drug 0.75"]<-"Drug_0.75"
-  final_diff$TRT[final_diff$TRT=="Drug 1.5"]<-"Drug_1.5"
   names(final_diff)<-c("TRT","VISID","geomean","geoSE")
   final_diff$Lower <- final_diff$geomean-qnorm(0.975)*final_diff$geoSE
   final_diff$Upper <- final_diff$geomean+qnorm(0.975)*final_diff$geoSE
@@ -236,13 +206,9 @@ split_summary <-function( data, split){
   asdf<<-check
 }
 split_summary(ten,0)
-write.csv(asdf, "12month_Rewind_<10_summary.csv")
 split_summary(thirty,30)
-write.csv(asdf, "12month_Rewind_<30_>10_summary.csv")
 split_summary(threehundred,300)
-write.csv(asdf, "12month_Rewind_<300_>30_summary.csv")
 split_summary(overhundred,3000)
-write.csv(asdf, "12month_Rewind_>300_summary.csv")
 
 
 asdf$TRT[asdf$TRT==i,1:2]

@@ -1,6 +1,6 @@
 ## Biomarker Regression analysis
 #
-# Log transformed analysis of biomarker data for new compound for new compound comparing various doses of study drug against older study drug
+# Log transformed analysis of biomarker data for new compound
 # Outputs csv file including Treatment, Time Point, Number of Patients, Geometric Mean, SE for Geometric Mean, Mean of log(biomarker), SD of log(biomarker), and 95% confidence intervals
 # Time points of interest include Baseline, Week 26 (midpoint), Week 52 (end of study), Change and Percent Change.
 # Also outputs regression plots for a visual representation of regression analysis
